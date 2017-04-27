@@ -45,8 +45,8 @@ def test_task(self):
     return {'count': 10}
 
 @celery.task(bind=True)
-def parseXml(self):
-    e = ElementTree.parse(os.path.join(app.config['UPLOAD_FOLDER'], 'test.xml')).getroot()
+def parseXml(self,filename):
+    e = ElementTree.parse(os.path.join(app.config['UPLOAD_FOLDER'], filename)).getroot()
     graph = {}
     meta = {'count':0,'weight':0}
 
@@ -83,11 +83,11 @@ def parseXml(self):
 
 @app.route('/')
 def index():
-    task = parseXml.apply_async()
-    record = GraphRecord(task_id=task.id,weight=0)
+    #task = parseXml.apply_async(kwargs={'filename': 'test.xml'})
+    #record = GraphRecord(task_id=task.id,weight=0)
 
-    db.session.add(record)
-    db.session.commit()
+    #db.session.add(record)
+    #db.session.commit()
 
     return render_template('index.html', tasks=GraphRecord.query.order_by(GraphRecord.date_add.desc()).slice(0,20))
 
@@ -107,9 +107,16 @@ def check(task_id):
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if request.method == 'POST':
+        salt = str(datetime.datetime.now().timestamp()).replace('.','')
         file = request.files['tree']
-        filename = secure_filename(file.filename)
+        filename = salt+'_'+secure_filename(file.filename)
+
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        task = parseXml.apply_async(kwargs={'filename': filename})
+        record = GraphRecord(task_id=task.id,weight=0)
+
+        db.session.add(record)
+        db.session.commit()
 
         return redirect(url_for('index'))
 
