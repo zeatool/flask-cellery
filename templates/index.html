@@ -9,34 +9,31 @@
 </head>
 <body>
 <div class="container">
-    <div class="col-md-9">
+    <h4>Загрузить файл</h4>
+    <form class="form-inline" action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="tree">
+        <button class="btn btn-success" type="submit">Upload</button>
+    </form>
+    <h4>Список файлов:</h4>
+    <div class="col-md-12">
         <table class="task-table table table-bordered">
             <thead>
             <tr>
                 <th>Дата добавления</th>
-                <th>Номер задачи</th>
+                <th>Состояние</th>
+                <th>Обработано узлов</th>
                 <th>Вес графа</th>
             </tr>
             {% for task in tasks %}
-                <tr class="js-data-row" data-id="{{ task.task_id }}">
+                <tr class="js-data-row {% if task.state != 'SUCCESS' %}js-data-row-active{% endif %}" data-id="{{ task.task_id }}">
                     <td>{{ task.date_add }}</td>
-                    <td>{{ task.task_id }}</td>
-                    <td>{{ task.weight }}</td>
+                    <td class="js-task-state">{{ task.state }}</td>
+                    <td class="js-task-count">{{ task.count }}</td>
+                    <td class="js-task-weight">{{ task.weight }}</td>
                 </tr>
             {% endfor %}
             </thead>
         </table>
-    </div>
-    <div class="col-md-3">
-        <form class="form-inline" action="/upload" method="post" enctype="multipart/form-data">
-            <input type="file" name="tree">
-            <button class="btn btn-success" type="submit">Upload</button>
-        </form>
-        <h4>Результат:</h4>
-        <div>
-            <p>Статус: <span class="js-task-state"></span></p>
-            <p>Обработано узлов: <span class="js-task-count"></span></p>
-        </div>
     </div>
 </div>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>

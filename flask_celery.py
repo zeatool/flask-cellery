@@ -32,6 +32,8 @@ class GraphRecord(db.Model):
     id = db.Column('id', db.Integer, primary_key = True)
     task_id = db.Column(db.String)
     weight = db.Column(db.Integer)
+    state = db.Column(db.String)
+    count = db.Column(db.Integer)
     date_add = db.Column(db.DateTime,default=datetime.datetime.now)
 
 @celery.task(bind=True)
@@ -44,7 +46,6 @@ def test_task(self):
 
 @celery.task(bind=True)
 def parseXml(self):
-    print("RUN")
     e = ElementTree.parse(os.path.join(app.config['UPLOAD_FOLDER'], 'test.xml')).getroot()
     graph = {}
     meta = {'count':0,'weight':0}
@@ -73,6 +74,10 @@ def parseXml(self):
         weight += len(point['childs'])
     meta['weight'] = weight
 
+    self.update_state(state='CALCULATE', meta=meta)
+    GraphRecord.query.filter_by(task_id=self.request.id).update({'weight':weight,'state':'SUCCESS','count':meta['count']})
+    db.session.commit()
+
     return meta
 
 
@@ -84,7 +89,7 @@ def index():
     db.session.add(record)
     db.session.commit()
 
-    return render_template('index.html', tasks=GraphRecord.query.all())
+    return render_template('index.html', tasks=GraphRecord.query.order_by(GraphRecord.date_add.desc()).slice(0,20))
 
 
 @app.route('/check/<task_id>')
@@ -93,7 +98,8 @@ def check(task_id):
 
     result = {
         'STATE' : task.state,
-        'COUNT' : task.info.get('count')
+        'COUNT' : task.info.get('count'),
+        'WEIGHT': task.info.get('weight'),
     }
     return jsonify(result)
 
@@ -106,34 +112,6 @@ def upload_file():
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
         return redirect(url_for('index'))
-
-
-@app.route('/parse')
-def parse():
-    e = ElementTree.parse(os.path.join(app.config['UPLOAD_FOLDER'], 'test.xml')).getroot()
-    graph = {}
-
-    for elem in e.findall('item'):
-        if elem.find('parentId') != None:
-            parent = elem.find('parentId').text
-            id = elem.find('id').text
-
-            if (graph.get(id) == None):
-                graph[id] = {'childs': set(), 'created': True}
-            else:
-                graph[id]['created'] = True
-
-            if (graph.get(parent) == None):
-                graph[parent] = {'childs': set(), 'created': False}
-
-            graph[parent]['childs'].add(id)
-
-    weight = 0
-    for point in graph.values():
-        weight += len(point['childs'])
-
-    return str(graph) + "<br>" + str(weight)
-
 
 if __name__ == '__main__':
     db.create_all()
