@@ -9,15 +9,15 @@ from werkzeug.utils import secure_filename
 from celery import Celery
 from itertools import cycle
 
-UPLOAD_FOLDER = r'C:/pyProjects/flask_celery/tmp'
+UPLOAD_FOLDER = r'tmp/'
 
 # Base configuration
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Celery configuration
-app.config['BROKER_URL'] = 'redis://localhost:6379/0'
-app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
+app.config['BROKER_URL'] = 'redis://redis:6379/0'
+app.config['CELERY_RESULT_BACKEND'] = 'redis://redis:6379/0'
 
 celery = Celery(app.name)
 celery.conf.update(app.config)
@@ -161,7 +161,6 @@ def parseXml(self, filename):
 
     return meta
 
-
 def calculate_graph_weight(graph):
     weight = 0
 
@@ -220,4 +219,4 @@ def upload_file():
 
 if __name__ == '__main__':
     db.create_all()
-    app.run()
+    app.run('0.0.0.0')

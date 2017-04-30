@@ -3,3 +3,4 @@ __pycache__
 main.sqlite3
 tmp
 !tmp/test.xml
+docker-compose.override.yml

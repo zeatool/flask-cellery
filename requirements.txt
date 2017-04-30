@@ -1,0 +1,4 @@
+Flask==0.11
+Celery==3.1.25
+Redis==2.10.5
+Flask-SQLAlchemy==2.2

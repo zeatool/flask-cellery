@@ -1,0 +1,30 @@
+version: '2'
+
+services:
+  #Redis
+  redis:
+    image: redis:3.2
+
+  #Web app
+  web:
+    build: .
+    working_dir: /app
+    command: ./run.sh
+    volumes:
+      - ./app:/app
+    ports:
+     - "5000:5000"
+    links:
+      - redis
+      - celery
+
+  #Celery worker
+  celery:
+    build: .
+    working_dir: /app
+    command: ./run_celery.sh
+    volumes:
+      - ./app:/app
+    links:
+      - redis
+
