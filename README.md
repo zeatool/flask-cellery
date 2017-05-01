@@ -19,5 +19,5 @@
 
 Чтобы запустить задачу необходимо выполнить:
 ```sh
-docker-compose 
+docker-compose up
 ```
