@@ -25,7 +25,7 @@
                 <th>Вес графа</th>
             </tr>
             {% for task in tasks %}
-                <tr class="js-data-row {% if task.state != 'SUCCESS' %}js-data-row-active{% endif %}" data-id="{{ task.task_id }}">
+                <tr class="js-data-row {% if task.state != 'SUCCESS' and  task.state != 'FAILURE' %}js-data-row-active{% endif %}" data-id="{{ task.task_id }}">
                     <td>{{ task.date_add.strftime("%d.%m.%Y %H:%M:%S") }}</td>
                     <td class="js-task-state">{{ task.state }}</td>
                     <td class="js-task-count">{{ task.count }}</td>

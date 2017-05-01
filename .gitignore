@@ -1,6 +1,6 @@
 .idea
 __pycache__
 main.sqlite3
-tmp
-!tmp/test.xml
 docker-compose.override.yml
+/app/tmp/*
+!/app/tmp/test

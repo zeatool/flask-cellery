@@ -1,13 +1,12 @@
 import datetime
 import os
-
 import time
+
 from xml.etree import ElementTree
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from celery import Celery
-from itertools import cycle
 
 UPLOAD_FOLDER = r'tmp/'
 
@@ -39,14 +38,15 @@ class GraphRecord(db.Model):
 
 
 class GraphCalculator():
-    filename = ''
     graph = {}
     weight = 0
     count = 0
 
     def __init__(self, filename=None):
-        if filename != None:
-            self.filename = filename
+        self.filename = filename
+
+    def parseFile(self):
+        if self.filename != None:
             tree = ElementTree.parse(os.path.join(app.config['UPLOAD_FOLDER'], self.filename)).getroot()
             self.elems = iter(tree.findall('item'))
 
@@ -109,14 +109,21 @@ def calculate_graph_from_file(self, filename):
     graph = GraphCalculator(filename)
     meta = {'count': 0, 'weight': 0}
 
-    while graph.next():
-        meta = graph.getMeta()
-        self.update_state(state='PARSE', meta=meta)
+    try:
+        graph.parseFile()
 
-    self.update_state(state='CALCULATE', meta=meta)
-    graph.calculate_graph_weight()
-    meta = graph.getMeta()
-    self.update_state(state='CALCULATE', meta=meta)
+        while graph.next():
+            meta = graph.getMeta()
+            self.update_state(state='PARSE', meta=meta)
+
+        self.update_state(state='CALCULATE', meta=meta)
+        graph.calculate_graph_weight()
+        meta = graph.getMeta()
+        self.update_state(state='CALCULATE', meta=meta)
+
+    except:
+        self.update_state(state='FAILURE',meta=meta)
+        return meta
 
     GraphRecord.query.filter_by(task_id=self.request.id).update(
         {'weight': meta['weight'], 'state': 'SUCCESS', 'count': meta['count']})
@@ -193,7 +200,7 @@ def check(task_id):
         'WEIGHT': 0,
     }
 
-    if task.info != None:
+    if task.state != 'FAILURE' and task.info != None:
         result['COUNT'] = task.info.get('count')
         result['WEIGHT'] = task.info.get('weight')
 

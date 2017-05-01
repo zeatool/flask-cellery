@@ -1,4 +1,6 @@
 import os
+import xml
+
 import flask_celery
 import unittest
 import tempfile
@@ -56,14 +58,34 @@ class FlaskCeleryTestCase(unittest.TestCase):
         }
         assert flask_celery.GraphCalculator.get_graph_weight(graph) == 0
 
-    def test_graph_calculate(self):
-        t = flask_celery.GraphCalculator('test.xml')
+    def test_parse(self):
+        t = flask_celery.GraphCalculator('test/test.xml')
+        t.parseFile()
+
         while t.next():
             t.getMeta()
 
-        print(t.calculate_graph_weight())
-        #flask_celery.parseXml('test.xml')
-        assert True == True
+        meta = t.getMeta()
+        assert meta['count'] == 64
+
+    def test_parse_file_not_found(self):
+        t = flask_celery.GraphCalculator('test_not_found.xml')
+
+        with self.assertRaises(FileNotFoundError):
+            t.parseFile()
+
+    def test_parse_file_not_xml(self):
+        t = flask_celery.GraphCalculator('test/test_no_xml.xml')
+        with self.assertRaises(xml.etree.ElementTree.ParseError):
+            t.parseFile()
+
+    def test_parse_no_items(self):
+        t = flask_celery.GraphCalculator('test/test_no_items.xml')
+        t.parseFile()
+
+    def test_parse_failed_items(self):
+        t = flask_celery.GraphCalculator('test/test_failed_items.xml')
+        t.parseFile()
 
 
 

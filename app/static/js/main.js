@@ -34,11 +34,16 @@ $(function () {
                 cur_row.find('.js-task-count').html(result.COUNT)
                 cur_row.find('.js-task-weight').html(result.WEIGHT)
 
-                if (result.STATE == 'SUCCESS'){
+                if (result.STATE == 'SUCCESS' || result.STATE == 'FAILURE'){
                     clearInterval(timerId);
                     cur_row.removeClass('info');
-                    cur_row.addClass('success');
+
+                    if (result.STATE == 'SUCCESS')
+                        cur_row.addClass('success');
+                    else
+                        cur_row.addClass('danger');
                 }
+
 
             }
         })
