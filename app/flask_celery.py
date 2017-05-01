@@ -24,6 +24,7 @@ celery.conf.update(app.config)
 # DB configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///main.sqlite3'
 app.config['SECRET_KEY'] = "random string"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 
 db = SQLAlchemy(app)
 
@@ -131,68 +132,14 @@ def calculate_graph_from_file(self, filename):
 
     return meta
 
-# depricated
-@celery.task(bind=True)
-def parseXml(self, filename):
-    e = ElementTree.parse(os.path.join(app.config['UPLOAD_FOLDER'], filename)).getroot()
-    graph = {}
-    meta = {'count': 0, 'weight': 0}
-
-    for elem in e.findall('item'):
-        time.sleep(0.5)
-        if elem.find('parentId') != None:
-            parent = elem.find('parentId').text
-            id = elem.find('id').text
-
-            if (graph.get(id) == None):
-                graph[id] = {'childs': set(), 'created': True}
-            else:
-                graph[id]['created'] = True
-
-            if (graph.get(parent) == None):
-                graph[parent] = {'childs': set(), 'created': False}
-
-            graph[parent]['childs'].add(id)
-        meta['count'] += 1
-        self.update_state(state='PARSE', meta=meta)
-
-    self.update_state(state='CALCULATE', meta=meta)
-
-    weight = calculate_graph_weight(graph)
-    meta['weight'] = weight
-
-    self.update_state(state='CALCULATED', meta=meta)
-    GraphRecord.query.filter_by(task_id=self.request.id).update(
-        {'weight': weight, 'state': 'SUCCESS', 'count': meta['count']})
-    db.session.commit()
-
-    return meta
-
-def calculate_graph_weight(graph):
-    weight = 0
-
-    for point in graph.values():
-        if (point.get('created') == True):
-            if point.get('childs') and isinstance(point['childs'], set):
-                weight += len(point['childs'])
-
-    return weight
-
-
 @app.route('/')
 def index():
-    # task = parseXml.apply_async(kwargs={'filename': 'test.xml'})
-    # record = GraphRecord(task_id=task.id,weight=0)
-
-    # db.session.add(record)
-    # db.session.commit()
-
     return render_template('index.html', tasks=GraphRecord.query.order_by(GraphRecord.date_add.desc()).slice(0, 20))
 
 
 @app.route('/check/<task_id>')
 def check(task_id):
-    task = parseXml.AsyncResult(task_id)
+    task = calculate_graph_from_file.AsyncResult(task_id)
 
     result = {
         'STATE': task.state,
